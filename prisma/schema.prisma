@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── USUÁRIOS ───────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(COLLABORATOR)
+  createdAt DateTime @default(now())
+  series    Series[]
+}
+
+enum Role {
+  DIRECTOR     // pode tudo
+  COLLABORATOR // pode criar e editar, não pode excluir série
+}
+
+// ── SÉRIE ──────────────────────────────────────────────
+model Series {
+  id          String       @id @default(uuid())
+  title       String
+  status      SeriesStatus @default(ACTIVE)
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // BÍBLIA DA SÉRIE — campos estruturados
+  premise     String? @db.Text // premissa em 1 parágrafo
+  tone        String? //          ex: 'aventura com humor leve'
+  ageTarget   String? //          ex: '6-10 anos'
+  vocabulary  String? @db.Text // regras de vocabulário
+  visualStyle String? @db.Text // paleta, referências visuais
+  worldRules  String? @db.Text // o que existe/não existe no mundo
+  seasonArc   String? @db.Text // arco da temporada completo
+
+  characters Character[]
+  episodes   Episode[]
+  createdBy  User         @relation(fields: [createdById], references: [id])
+}
+
+enum SeriesStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+// ── PERSONAGEM ─────────────────────────────────────────
+model Character {
+  id           String  @id @default(uuid())
+  seriesId     String
+  name         String
+  age          String?
+  personality  String  @db.Text // como é, como age
+  speakStyle   String  @db.Text // como fala, tom, expressões características
+  motivations  String? @db.Text
+  restrictions String? @db.Text // o que esse personagem NUNCA faz
+
+  series Series @relation(fields: [seriesId], references: [id])
+}
+
+// ── EPISÓDIO ───────────────────────────────────────────
+model Episode {
+  id             String        @id @default(uuid())
+  seriesId       String
+  order          Int
+  title          String
+  premise        String        @db.Text // briefing do diretor
+  script         String?       @db.Text // roteiro completo do episódio
+  scriptVersionA String?       @db.Text // versão Claude
+  scriptVersionB String?       @db.Text // versão OpenAI
+  approvedScript String?       @db.Text // versão aprovada (copiada de A ou B)
+  status         EpisodeStatus @default(DRAFT)
+  durationMin    Int? //                   duração estimada em minutos
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  series Series  @relation(fields: [seriesId], references: [id])
+  scenes Scene[]
+}
+
+enum EpisodeStatus {
+  DRAFT            // briefing escrito, sem roteiro
+  GENERATING       // IAs gerando as 2 versões
+  PENDING_APPROVAL // aguardando escolha entre A e B
+  APPROVED         // roteiro aprovado, pronto para dividir
+  DIVIDING         // sistema dividindo em cenas
+  IN_PRODUCTION    // cenas em produção
+  COMPLETED        // todos os assets aprovados
+}
+
+// ── CENA ───────────────────────────────────────────────
+model Scene {
+  id               String      @id @default(uuid())
+  episodeId        String
+  order            Int
+  title            String? //              ex: 'Praça central — dia'
+  location         String? //              local da cena
+  characters       String? //              personagens em quadro (JSON array como string)
+  script           String      @db.Text // trecho do roteiro desta cena
+  visualDirective  String?     @db.Text // diretriz visual gerada
+  pipeline         Pipeline    @default(AI_VIDEO)
+  generationPrompt String?     @db.Text // prompt pronto para geração do asset
+  memoryBufferIn   Json? //                estado recebido da cena anterior
+  memoryBufferOut  Json? //                estado que passa para a próxima
+  consistencyReport Json? //               relatório do revisor
+  assetUrl         String? //              URL do vídeo/imagem gerado
+  status           SceneStatus @default(PENDING)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  episode Episode @relation(fields: [episodeId], references: [id])
+}
+
+enum Pipeline {
+  RENDER_3D
+  AI_VIDEO
+  ANIMATION_2D
+}
+
+enum SceneStatus {
+  PENDING          // cena criada pela divisão, aguardando revisão
+  APPROVED         // roteiro da cena aprovado pelo diretor
+  CONSISTENCY_FAIL // revisor encontrou contradições críticas
+  IN_PRODUCTION    // asset sendo gerado
+  ASSET_DONE       // asset gerado e aprovado
+}

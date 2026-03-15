@@ -5,9 +5,14 @@ import { z } from 'zod'
 
 const createSeriesSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().optional(),
-  targetAgeGroup: z.string().optional(),
   status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED']).optional(),
+  premise: z.string().optional(),
+  tone: z.string().optional(),
+  ageTarget: z.string().optional(),
+  vocabulary: z.string().optional(),
+  visualStyle: z.string().optional(),
+  worldRules: z.string().optional(),
+  seasonArc: z.string().optional(),
 })
 
 export async function GET() {
@@ -18,7 +23,7 @@ export async function GET() {
     }
 
     const series = await prisma.series.findMany({
-      where: { userId: session.user.id },
+      where: { createdById: session.user.id },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: { select: { episodes: true, characters: true } },
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
     const series = await prisma.series.create({
       data: {
         ...parsed.data,
-        userId: session.user.id,
+        createdById: session.user.id,
       },
     })
 

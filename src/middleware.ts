@@ -1,33 +1,24 @@
-// Proteção de rotas — implementação completa no Módulo 1 (Auth)
-// Por ora, exporta o middleware do NextAuth v5 após lib/auth.ts ser criado
-
+import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
 
-// Rotas públicas — não requerem autenticação
-const PUBLIC_ROUTES = ['/login', '/unauthorized']
-const PUBLIC_PREFIXES = ['/api/auth', '/_next', '/favicon.ico']
+export default auth((req) => {
+  const { nextUrl, auth: session } = req
+  const isLoggedIn = !!session
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Liberar rotas públicas e assets
   const isPublic =
-    PUBLIC_ROUTES.includes(pathname) ||
-    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+    nextUrl.pathname.startsWith('/login') ||
+    nextUrl.pathname.startsWith('/unauthorized') ||
+    nextUrl.pathname.startsWith('/api/auth')
 
   if (isPublic) return NextResponse.next()
 
-  // TODO (Módulo 1): Substituir por verificação de sessão NextAuth v5
-  // Exemplo:
-  //   const session = await auth()
-  //   if (!session) return NextResponse.redirect(new URL('/login', request.url))
+  if (!isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', nextUrl))
+  }
+
   return NextResponse.next()
-}
+})
 
 export const config = {
-  matcher: [
-    // Aplicar middleware em todas as rotas exceto arquivos estáticos
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'  ],
 }

@@ -1,14 +1,17 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { Sidebar } from '@/components/layout/sidebar'
 
-async function getSeries() {
+async function getSeries(userId: string) {
   try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/series`, {
-      cache: 'no-store',
+    return await prisma.series.findMany({
+      where: { createdById: userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { episodes: true, characters: true } },
+      },
     })
-    if (!res.ok) return []
-    return res.json()
   } catch {
     return []
   }
@@ -25,7 +28,7 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  const series = await getSeries()
+  const series = await getSeries(session.user.id)
 
   return (
     <div className="flex min-h-screen">

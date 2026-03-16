@@ -1,24 +1,9 @@
-import { auth } from '@/lib/auth'
-import { NextResponse } from 'next/server'
+import NextAuth from 'next-auth'
+import { authConfig } from './auth.config'
 
-export default auth((req) => {
-  const { nextUrl, auth: session } = req
-  const isLoggedIn = !!session
-
-  const isPublic =
-    nextUrl.pathname.startsWith('/login') ||
-    nextUrl.pathname.startsWith('/unauthorized') ||
-    nextUrl.pathname.startsWith('/api/auth')
-
-  if (isPublic) return NextResponse.next()
-
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', nextUrl))
-  }
-
-  return NextResponse.next()
-})
+// Use Edge-compatible auth config (no Prisma) for middleware
+export const { auth: middleware } = NextAuth(authConfig)
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'  ],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }

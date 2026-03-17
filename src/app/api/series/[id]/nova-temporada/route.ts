@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 function parseSeasonTitle(title: string): { showName: string; season: number } {
   const match = title.match(/^(.+?)\s*[\u2014\u2013-]\s*Temporada\s+(\d+)$/i)

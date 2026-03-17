@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Pencil, Trash2, User, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, User, Loader2, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -69,6 +69,7 @@ export default function SeriesDetailPage() {
     premise: '', tone: '', ageTarget: '', vocabulary: '', visualStyle: '', worldRules: '', seasonArc: '',
   })
   const [autoSaving, setAutoSaving] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
   const [characters, setCharacters] = useState<Character[]>([])
   const [charCount, setCharCount] = useState(0)
   const [charSheet, setCharSheet] = useState<{ open: boolean; editing: Character | null }>({ open: false, editing: null })
@@ -127,7 +128,30 @@ export default function SeriesDetailPage() {
     return () => clearTimeout(debounceRef.current)
   }, [bible, id])
 
-  const loadCharacters = useCallback(async () => {
+    const handleGenerateBible = async () => {
+    setAiLoading(true)
+    try {
+      const res = await fetch(`/api/series/${id}/generate-bible`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao gerar bíblia.')
+      setBible({
+        premise: data.premise ?? bible.premise,
+        tone: data.tone ?? bible.tone,
+        ageTarget: data.ageTarget ?? bible.ageTarget,
+        vocabulary: data.vocabulary ?? '',
+        visualStyle: data.visualStyle ?? '',
+        worldRules: data.worldRules ?? '',
+        seasonArc: data.seasonArc ?? '',
+      })
+      toast.success('Bíblia gerada com sucesso!')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar bíblia.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+const loadCharacters = useCallback(async () => {
     try {
       const res = await fetch(`/api/series/${id}/characters`)
       if (res.ok) {
@@ -259,7 +283,24 @@ export default function SeriesDetailPage() {
           </div>
 
           <div>
-            <Label htmlFor="seasonArc">Arco da Temporada</Label>
+            <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="seasonArc">Arco da Temporada</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateBible}
+                  disabled={aiLoading}
+                  className="gap-2 text-xs"
+                >
+                  {aiLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  Preencher com IA
+                </Button>
+              </div>
             <Textarea
               id="seasonArc"
               placeholder="Descreva o arco narrativo completo da temporada..."

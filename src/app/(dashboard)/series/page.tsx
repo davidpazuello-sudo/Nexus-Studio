@@ -139,6 +139,17 @@ export default function SeriesPage() {
     }
   }
 
+  const handleNovaTemporada = async (seriesId: string) => {
+    try {
+      const res = await fetch(`/api/series/${seriesId}/nova-temporada`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao criar nova temporada.')
+      toast.success(`"${data.title}" criada com sucesso!`)
+      loadSeries()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar nova temporada.')
+    }
+  }
   return (
     <div className="p-6">
       {/* Header */}
@@ -198,7 +209,10 @@ export default function SeriesPage() {
                       >
                         <Pencil className="w-4 h-4 mr-2" /> Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem
+                                    <DropdownMenuItem onClick={() => handleNovaTemporada(s.id)}>
+                <Plus className="w-4 h-4 mr-2" /> Nova Temporada
+              </DropdownMenuItem>
+<DropdownMenuItem
                         className="text-red-600 focus:text-red-600"
                         onClick={() => setDeleteId(s.id)}
                       >

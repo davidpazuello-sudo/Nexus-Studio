@@ -60,7 +60,7 @@ const statusColor: Record<string, string> = {
   COMPLETED: 'bg-gray-100 text-gray-700',
 }
 
-const emptyForm = { title: '', status: 'ACTIVE' as const }
+const emptyForm = { title: '', status: 'ACTIVE' as Series['status'] }
 
 export default function SeriesPage() {
   const [series, setSeries] = useState<Series[]>([])
